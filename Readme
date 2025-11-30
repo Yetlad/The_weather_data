@@ -1,0 +1,127 @@
+
+## Report: Weather App with Kotlin and Jetpack Compose
+
+## Yetunde Abdulazeez-Ado
+
+
+## 1. Introduction
+The objective of this assignment was to create an Android application using **Kotlin** and **Jetpack Compose** that fetches weather data (temperature and humidity) for a specific city using the **OpenWeatherMap API**. The app should display the results in a **LazyList**, allowing multiple cities’ weather data to be stacked and viewed together. This task builds on previous exercises with Retrofit and ViewModel, adapting boilerplate code originally designed for fetching random jokes.
+
+
+## 2. Methodology
+
+### 2.1 API Setup
+ **Base URL:**  
+  kotlin
+  private const val BASE_URL = "https://api.openweathermap.org/data/2.5/"
+  
+ **API Key:** A free account was created on OpenWeatherMap to obtain an API key.  
+ **Endpoint:**  
+  https://api.openweathermap.org/data/2.5/weather?q=Helsinki&units=metric&appid=<api_key>
+  
+ **Parameters:**  
+  - `q` → city name  
+  - `appid` → API key  
+  - `units` → metric (for Celsius temperatures)
+
+### 2.2 Data Model
+Two data classes were defined to parse the JSON response:
+kotlin
+data class WeatherResponse(val name: String, val main: Main)
+data class Main(val temp: Float, val humidity: Int)
+
+
+### 2.3 Retrofit Interface
+The Retrofit interface was updated to query weather data:
+kotlin
+interface WeatherApiService {
+    @GET("weather")
+    suspend fun getWeatherByCity(
+        @Query("q") city: String,
+        @Query("appid") apiKey: String,
+        @Query("units") units: String = "metric"
+    ): WeatherResponse
+}
+
+### 2.4 Retrofit Instance
+A singleton object was created to initialize Retrofit:
+kotlin
+object RetrofitInstance {
+    private const val BASE_URL = "https://api.openweathermap.org/data/2.5/"
+    val api: WeatherApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(WeatherApiService::class.java)
+    }
+}
+
+
+### 2.5 ViewModel
+The `WeatherViewModel` manages API calls and stores results in a `mutableStateListOf`:
+- Uses `viewModelScope.launch(Dispatchers.IO)` for background network calls.
+- Updates UI state on the main thread with `withContext(Dispatchers.Main)`.
+- Handles exceptions with error messages for failed requests.
+
+### 2.6 Jetpack Compose UI
+The UI consists of:
+- A **TextField** for city input.  
+- A **Button** to trigger weather fetch.  
+- A **LazyColumn** to display stacked weather cards for multiple cities.  
+
+Each card shows:
+- City name  
+- Temperature (°C)  
+- Humidity (%)  
+
+## 3. Results
+The application successfully:
+- Fetches weather data for user-entered cities.  
+- Displays temperature and humidity in a scrollable list.  
+- Allows stacking of multiple cities’ weather data.  
+- Handles errors gracefully (e.g., invalid city names or API issues).  
+
+**Example Output:**
+Kuopio: -2.03℃, 37% humidity
+New York: 9.54℃, 58% humidity
+Helsinki: 1.37℃, 51% humidity
+Lagos: 30.03℃, 67% humidity
+Rio de Janeiro: 28.32℃, 67% humidity
+Rovaniemi: -3.33℃, 42% humidity
+
+
+## 4. Discussion
+This project demonstrated:
+- **Retrofit integration** with external APIs.  
+- **State management** using ViewModel and Compose.  
+- **LazyColumn usage** for dynamic, scrollable lists.  
+- **Error handling** for network requests.  
+
+Challenges included:
+- Ensuring the API key was active (OpenWeatherMap keys may take up to two hours to activate).  
+- Correctly mapping JSON responses to Kotlin data classes.  
+- Managing coroutine contexts for background work and UI updates.
+
+
+
+## 5. Conclusion
+The weather app meets all assignment requirements:
+- Fetches real-time weather data using Retrofit.  
+- Displays results in a Compose-based LazyList.  
+- Supports multiple stacked city entries.  
+
+This exercise strengthened skills in **API integration, Jetpack Compose UI design, and ViewModel-based state management**. The app is extensible for future features such as detailed forecasts or location-based weather queries.
+
+
+## 6. Dependencies and Permissions
+- **Dependencies (build.gradle.kts):**
+  kotlin
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+  implementation("com.squareup.retrofit2:retrofit:2.9.0")
+  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+  
+- **Permissions (AndroidManifest.xml):**
+  xml
+  <uses-permission android:name="android.permission.INTERNET" />
